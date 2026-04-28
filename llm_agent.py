@@ -20,6 +20,8 @@ import ollama
 
 from rule_checker import DEFAULT_PARAMS, LIMITS
 
+# Preferred: qwen2-vl:7b (requires Ollama >= 0.3.x — update if pull fails)
+# Fallback:  llava:7b   (older Ollama, same multimodal capability)
 MODEL = "qwen2-vl:7b"
 
 SYSTEM_PROMPT = Path("prompts/design_agent.txt").read_text()
