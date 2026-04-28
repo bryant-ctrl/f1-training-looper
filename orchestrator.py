@@ -29,6 +29,7 @@ from blender_bridge import BlenderBridge
 from drive_sync import DriveSync
 from llm_agent import DesignAgent
 from scorer import format_results
+from visual_validator import VisualValidator
 
 console = Console()
 OUTPUT_DIR = Path("output")
@@ -92,6 +93,9 @@ def main(rulebook: Path, base_model: Path, hours: float, cfd_timeout: int):
     console.print("[bold cyan]Loading LLM agent...[/]")
     agent = DesignAgent(rulebook)
 
+    console.print("[bold cyan]Loading visual validator (moondream)...[/]")
+    validator = VisualValidator(blender)
+
     # ── Main loop ────────────────────────────────────────────────────
     current_params = dict(rule_checker.DEFAULT_PARAMS)
     best_score = -float("inf")
@@ -136,10 +140,18 @@ def main(rulebook: Path, base_model: Path, hours: float, cfd_timeout: int):
                     console.print(f"    {v.message}")
                 params = rule_checker.clamp_to_legal(params)
 
-            # Apply in Blender and export
+            # Apply in Blender, visually validate, then export
             try:
                 blender.reset_to_base()
                 blender.apply_params(params)
+
+                console.print("  Running visual check (moondream)...")
+                is_valid, reason = validator.validate()
+                if not is_valid:
+                    console.print(f"  [yellow]Visual check FAILED — skipping design:[/]\n{reason}")
+                    continue
+                console.print(f"  [green]Visual check passed[/]")
+
                 job_id = make_job_id(iteration, variant)
                 mesh_path = blender.export_stl(job_id, OUTPUT_DIR)
                 console.print(f"  Exported mesh: {mesh_path.name} ({mesh_path.stat().st_size // 1024} KB)")
