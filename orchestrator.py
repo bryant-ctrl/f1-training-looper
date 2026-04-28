@@ -29,7 +29,6 @@ from blender_bridge import BlenderBridge
 from drive_sync import DriveSync
 from llm_agent import DesignAgent
 from scorer import format_results
-from visual_validator import VisualValidator
 
 console = Console()
 OUTPUT_DIR = Path("output")
@@ -90,11 +89,8 @@ def main(rulebook: Path, base_model: Path, hours: float, cfd_timeout: int):
     console.print("[bold cyan]Connecting to Google Drive...[/]")
     drive = DriveSync()
 
-    console.print("[bold cyan]Loading LLM agent...[/]")
-    agent = DesignAgent(rulebook)
-
-    console.print("[bold cyan]Loading visual validator (moondream)...[/]")
-    validator = VisualValidator(blender)
+    console.print("[bold cyan]Loading design agent (qwen2-vl:7b)...[/]")
+    agent = DesignAgent(rulebook, blender)
 
     # ── Main loop ────────────────────────────────────────────────────
     current_params = dict(rule_checker.DEFAULT_PARAMS)
@@ -112,12 +108,12 @@ def main(rulebook: Path, base_model: Path, hours: float, cfd_timeout: int):
         remaining = end_time - datetime.now()
         console.rule(f"[bold]Iteration {iteration}[/]  ({str(remaining).split('.')[0]} remaining)")
 
-        # ── Ask LLM for proposals ─────────────────────────────────
-        console.print("[cyan]Asking LLM for design proposals...[/]")
+        # ── Ask agent for proposals (passes recent renders as images) ─
+        console.print("[cyan]Asking design agent for proposals...[/]")
         try:
             proposals = agent.propose(current_params, history)
         except Exception as e:
-            console.print(f"[red]LLM error: {e}. Skipping iteration.[/]")
+            console.print(f"[red]Agent error: {e}. Skipping iteration.[/]")
             time.sleep(30)
             continue
 
@@ -126,7 +122,7 @@ def main(rulebook: Path, base_model: Path, hours: float, cfd_timeout: int):
             ("B", proposals["variant_b"]),
         ]
 
-        submitted: list[tuple[str, str, dict]] = []  # (variant, job_id, proposal)
+        submitted: list[tuple[str, str, dict, dict, list]] = []
 
         for variant, proposal in jobs:
             params = proposal["parameters"]
@@ -135,42 +131,44 @@ def main(rulebook: Path, base_model: Path, hours: float, cfd_timeout: int):
             # Rule check
             violations = rule_checker.check(params)
             if violations:
-                console.print(f"  [yellow]Rule violations — clamping:[/]")
+                console.print("  [yellow]Rule violations — clamping:[/]")
                 for v in violations:
                     console.print(f"    {v.message}")
                 params = rule_checker.clamp_to_legal(params)
 
-            # Apply in Blender, visually validate, then export
+            # Apply in Blender, render, validate, then export
             try:
                 blender.reset_to_base()
                 blender.apply_params(params)
 
-                console.print("  Running visual check (moondream)...")
-                is_valid, reason = validator.validate()
+                console.print("  Rendering for visual check...")
+                renders = agent.render_current(f"iter{iteration:04d}_{variant}")
+
+                console.print("  Running visual check (qwen2-vl:7b)...")
+                is_valid, reason = agent.validate(renders)
                 if not is_valid:
-                    console.print(f"  [yellow]Visual check FAILED — skipping design:[/]\n{reason}")
+                    console.print(f"  [yellow]Visual check FAILED — skipping:[/]\n{reason}")
                     continue
-                console.print(f"  [green]Visual check passed[/]")
+                console.print("  [green]Visual check passed[/]")
 
                 job_id = make_job_id(iteration, variant)
                 mesh_path = blender.export_stl(job_id, OUTPUT_DIR)
-                console.print(f"  Exported mesh: {mesh_path.name} ({mesh_path.stat().st_size // 1024} KB)")
+                console.print(f"  Exported: {mesh_path.name} ({mesh_path.stat().st_size // 1024} KB)")
             except Exception as e:
                 console.print(f"  [red]Blender error: {e}[/]")
                 continue
 
-            # Submit to Drive
             drive.submit_job(mesh_path, params, job_id)
             console.print(f"  Submitted job {job_id} to Drive queue")
-            submitted.append((variant, job_id, proposal, params))
+            submitted.append((variant, job_id, proposal, params, renders))
 
         # ── Wait for CFD results ──────────────────────────────────
-        for variant, job_id, proposal, params in submitted:
+        for variant, job_id, proposal, params, renders in submitted:
             console.print(f"\n  Waiting for CFD results: {job_id}...")
             results = drive.wait_for_result(job_id, timeout=cfd_timeout)
 
             if results is None:
-                console.print(f"  [red]Timeout waiting for {job_id}. CFD worker may be disconnected.[/]")
+                console.print(f"  [red]Timeout for {job_id}. CFD worker may be disconnected.[/]")
                 continue
 
             score = results.get("score", 0.0)
@@ -185,6 +183,7 @@ def main(rulebook: Path, base_model: Path, hours: float, cfd_timeout: int):
                 "results": results,
                 "score": score,
                 "is_best": is_best,
+                "renders": [str(p) for p in renders],  # passed as images to future proposals
                 "timestamp": datetime.now().isoformat(),
             }
             history.append(entry)
@@ -196,10 +195,8 @@ def main(rulebook: Path, base_model: Path, hours: float, cfd_timeout: int):
                 best_params = params
                 drive.save_best(OUTPUT_DIR / f"{job_id}.stl", params, results)
                 console.print(f"  [bold green]NEW BEST! Score={score:.3f}[/]")
-                # Update current_params to the best found so far
                 current_params = dict(params)
 
-        # Save history after each iteration
         drive.save_history(history)
         print_scoreboard(history)
 
