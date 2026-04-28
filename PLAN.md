@@ -79,7 +79,7 @@ renders of the last 3–5 iterations *as images* alongside their CL/CD scores.
 This means it can reason visually — e.g. "the front wing in iteration 4 looks
 stalled, let me reduce the angle" — instead of purely pattern-matching on numbers.
 
-**Model:** `qwen2-vl:7b` (Q4_K_M, ~5 GB)
+**Model:** `llava:7b` (Q4_K_M, ~5 GB)
 Fits comfortably in 16 GB alongside Blender. Handles both vision and structured
 JSON output.
 
@@ -216,9 +216,9 @@ Restart your terminal after. Verify: `uv --version`
 ```bash
 # Download from https://ollama.com — it's a .dmg, drag to Applications
 # Then in terminal:
-ollama pull qwen2-vl:7b
+ollama pull llava:7b
 ```
-This downloads ~5 GB. Test it: `ollama run qwen2-vl:7b "Hello"`
+This downloads ~5 GB. Test it: `ollama run llava:7b "Hello"`
 
 #### 1c. Install Blender MCP server
 ```bash
@@ -421,7 +421,7 @@ The orchestrator will:
 f1-training-looper/
 ├── orchestrator.py           # Main loop — runs on Mac
 ├── blender_bridge.py         # Talks to Blender MCP
-├── llm_agent.py              # qwen2-vl:7b: design proposals + visual validation
+├── llm_agent.py              # llava:7b: design proposals + visual validation
 ├── drive_sync.py             # Google Drive desktop app folder sync
 ├── rule_checker.py           # Validates designs against F1 regs
 ├── scorer.py                 # Parses CFD output, computes CL/CD
@@ -451,7 +451,7 @@ f1-training-looper/
 | OpenFOAM setup on Colab is fragile | Use a pre-built Docker image or conda install as fallback |
 | CFD mesh quality affects results | Start with coarse mesh (fast), refine later once loop works |
 | LLM proposes invalid designs | Rule checker rejects before CFD, no wasted compute |
-| 16GB Mac RAM limits Blender + model simultaneously | qwen2-vl:7b uses ~5GB — leaves plenty for Blender |
+| 16GB Mac RAM limits Blender + model simultaneously | llava:7b uses ~5GB — leaves plenty for Blender |
 
 ---
 

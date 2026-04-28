@@ -63,24 +63,19 @@ Ollama runs AI models locally on your Mac.
 3. Open the `.dmg` and drag Ollama to your Applications folder
 4. Open Ollama from Applications — a small icon appears in your menu bar
 
-Then in Terminal, download the two models you need:
+Then in Terminal, download the model:
 
 ```bash
-# The main reasoning model (~8 GB download, takes 5-10 min)
-ollama pull qwen2.5:14b
-
-# The vision model for checking Blender renders (~1.7 GB)
-ollama pull moondream
+# Multimodal model — handles both design proposals and visual checks (~4 GB)
+ollama pull llava:7b
 ```
 
-Both downloads can run at the same time if you open two Terminal windows.
-
-Verify both are installed:
+Verify it installed:
 ```bash
 ollama list
 ```
 
-You should see `qwen2.5:14b` and `moondream` in the list.
+You should see `llava:7b` in the list.
 
 **Troubleshooting:** If `ollama` is not found, make sure the Ollama app is
 running (check your menu bar for the icon) and restart Terminal.
@@ -424,16 +419,15 @@ Duration:   12 hours
 Connecting to Blender...
 Loading model into Blender...
 Connecting to Google Drive...
-Loading LLM agent...
-Loading visual validator (moondream)...
+Loading design agent (llava:7b)...
 
 Starting optimization loop...
 Will run until: HH:MM:SS
 
 ─── Iteration 1 ─────────────────────────────
-Asking LLM for design proposals...
+Asking design agent for proposals...
   Variant A: Increase front wing angle to improve downforce...
-  Running visual check (moondream)...
+  Running visual check (llava:7b)...
   Visual check passed
   Exported mesh: iter0001_A_ab3f92.stl (2048 KB)
   Submitted job iter0001_A_ab3f92 to Drive queue

@@ -1,13 +1,13 @@
 """
-Design agent + visual validator — unified qwen2-vl:7b multimodal model.
+Design agent + visual validator — unified llava:7b multimodal model.
 
-qwen2-vl:7b handles both roles:
+llava:7b handles both roles:
   1. Geometry validation — checks renders for broken geometry before CFD
   2. Design proposals    — sees renders of past iterations alongside CFD
                            scores, so it reasons visually not just numerically
 
 Setup:
-  ollama pull qwen2-vl:7b
+  ollama pull llava:7b
 """
 
 import json
@@ -20,9 +20,7 @@ import ollama
 
 from rule_checker import DEFAULT_PARAMS, LIMITS
 
-# Preferred: qwen2-vl:7b (requires Ollama >= 0.3.x — update if pull fails)
-# Fallback:  llava:7b   (older Ollama, same multimodal capability)
-MODEL = "qwen2-vl:7b"
+MODEL = "llava:7b"
 
 SYSTEM_PROMPT = Path("prompts/design_agent.txt").read_text()
 
