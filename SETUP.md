@@ -257,127 +257,237 @@ After running setup_model.py:
 
 ## Phase 3 — Google Colab Setup
 
-### 3.1 Create the notebook
+The notebook file is at `notebooks/colab_worker.ipynb` in this repo.
+It is a complete, ready-to-run notebook — you do not need to type any code.
+
+### 3.1 Upload the notebook
 
 1. Go to https://colab.research.google.com
-2. Click **File → Upload Notebook**
-3. Upload the file `notebooks/colab_worker.ipynb` from this project
-4. The notebook opens automatically
+2. In the welcome dialog, click the **Upload** tab
+   — if there's no dialog, go to **File → Upload notebook** in the top menu
+3. Click **Browse** and select `notebooks/colab_worker.ipynb` from this project
+4. The notebook opens with all 5 cells already populated — do not edit them
 
-### 3.2 Enable GPU
+### 3.2 Switch to a GPU runtime
 
-1. Click **Runtime** (top menu) → **Change runtime type**
-2. Set **Hardware accelerator** to **T4 GPU**
-3. Click **Save**
+1. Click **Runtime** in the top menu bar
+2. Click **Change runtime type**
+3. Under **Hardware accelerator**, select **T4 GPU**
+4. Click **Save**
 
-### 3.3 Run the cells
+You'll see a message that the runtime restarted — that's expected and normal.
 
-Run each cell **one at a time** by clicking the play button (▶) on the left.
+### 3.3 Run Cell 1 — Mount Google Drive
 
-**Cell 1 — Mount Drive:**
-- Click ▶ on Cell 1
-- A popup asks for Google Drive permission — click **Connect to Google Drive**
-- Sign in if prompted
-- You should see: `Mounted at /content/drive`
+Click the **▶ play button** on the left of Cell 1, or press **Shift+Enter**.
 
-**Cell 2 — Install OpenFOAM:**
-- Click ▶ on Cell 2
-- This takes **4–6 minutes**. You'll see lots of output scrolling — this is normal.
-- Wait until you see: `OpenFOAM installed.`
+- A popup appears saying Colab wants to access your Google Drive
+- Click **Connect to Google Drive**
+- A second browser tab or popup opens — sign in with your Google account
+- Come back to the Colab tab
 
-**Cell 3 — Setup:**
-- Click ▶ — should finish instantly
-- Verify the paths printed look correct (ending in `f1-opt/queue`, `f1-opt/results`)
+✅ **Success:** the cell finishes and prints `Mounted at /content/drive`
 
-**Cell 4 — Case functions:**
-- Click ▶ — should finish with: `Case setup functions ready.`
+❌ **If the popup never appeared:** click the ▶ button again. Sometimes the
+popup is blocked — check your browser's address bar for a blocked popup icon.
 
-**Cell 5 — Worker loop:**
-- Click ▶
-- You'll see: `CFD Worker (colab) started at HH:MM:SS`
-- `Watching queue: /content/drive/MyDrive/f1-opt/queue`
-- `Waiting for jobs...`
+### 3.4 Run Cell 2 — Install OpenFOAM
 
-The notebook is now running and waiting. **Do not click stop.**
+Click ▶ on Cell 2.
 
-### 3.4 Activate the keep-alive script
+- A large wall of text starts scrolling — this is the OpenFOAM installation
+- This is **completely normal** — do not stop it
+- It takes **4–6 minutes**
 
-This prevents Colab from disconnecting while you leave it running.
+✅ **Success:** scrolling stops and the last line says `OpenFOAM installed.`
 
-1. Press **F12** on your keyboard (opens browser developer tools)
-   - On Mac: **Cmd + Option + J** opens the console directly
-2. Click the **Console** tab at the top of the DevTools panel
-3. Open the file `notebooks/colab_keepalive.js` from this project
-4. Copy the **entire contents** of that file
-5. Paste it into the console and press **Enter**
-6. You should see: `[keep-alive] Started. Runs every 30s.`
-7. You can close the DevTools panel (press F12 again) — the script keeps running
+❌ **If it errors with "apt-get failed":** click ▶ again — apt-get occasionally
+fails on first attempt in Colab and succeeds on the second try.
 
-**Every 5 minutes** you'll see a tick message in the console confirming
-it's still active.
+### 3.5 Run Cell 3 — Setup paths
 
-**Important:**
-- Keep the Colab browser tab open (don't close it)
-- Keep your Mac awake: **System Settings → Battery → Prevent sleeping when
-  on power adapter** → turn ON
-- If you close the laptop lid, the session will likely disconnect
+Click ▶. This finishes in under a second.
+
+✅ **Success:** prints two lines like:
+```
+Queue: /content/drive/MyDrive/f1-opt/queue
+Results: /content/drive/MyDrive/f1-opt/results
+Worker ID: colab
+```
+
+If the paths look wrong or you see a Drive error, go back and re-run Cell 1.
+
+### 3.6 Run Cell 4 — Define CFD functions
+
+Click ▶. Also finishes instantly.
+
+✅ **Success:** prints `Case setup functions ready.`
+
+### 3.7 Run Cell 5 — Start the worker loop
+
+Click ▶ on Cell 5.
+
+✅ **Success:** prints:
+```
+CFD Worker (colab) started at HH:MM:SS
+Watching queue: /content/drive/MyDrive/f1-opt/queue
+Waiting for jobs...
+```
+
+The cell now shows a **spinning circle** on the left — this means it is
+actively running and waiting for mesh jobs from your Mac. **Do not click stop.**
+
+When a job arrives from the Mac, you will see it print lines like:
+```
+[14:32:01] Processing job: iter0001_A_ab3f92
+  blockMesh...
+  snappyHexMesh...
+  simpleFoam...
+  Done! CL=1.2341  CD=0.8823  L/D=1.399
+```
+
+### 3.8 Activate the keep-alive script
+
+This prevents the browser from putting the tab to sleep and auto-reconnects
+the session if it drops.
+
+1. With the Colab tab active, press **Cmd + Option + J** on your Mac keyboard
+   — this opens the browser's developer console in a panel at the bottom
+2. Click the **Console** tab if it's not already selected
+3. On your Mac, open `notebooks/colab_keepalive.js` in any text editor
+   (TextEdit, VS Code, etc.)
+4. Select all the text (**Cmd+A**) and copy it (**Cmd+C**)
+5. Click inside the console input at the very bottom of the DevTools panel
+6. Paste (**Cmd+V**) and press **Enter**
+
+✅ **Success:** you see `[keep-alive] Started. Runs every 30s.`
+
+You can now close the DevTools panel by pressing **Cmd + Option + J** again.
+The script keeps running invisibly. Every 5 minutes it logs a heartbeat
+message you can check if you re-open the console.
+
+**Also do this:**
+- Go to **System Settings → Battery → Options**
+- Turn on **"Prevent automatic sleeping on power adapter when the display is off"**
+- Keep the Colab tab visible in your browser — don't bury it behind other windows
 
 ---
 
 ## Phase 4 — Kaggle Setup
 
-### 4.1 Create a Kaggle account
+The notebook file is at `notebooks/kaggle_worker.ipynb` in this repo.
+Kaggle uses rclone to talk to your Google Drive instead of a native mount.
 
-Go to https://www.kaggle.com and sign up if you don't have an account.
-Verify your phone number — Kaggle requires this to enable GPU access.
+### 4.1 Verify your Kaggle account has GPU access
 
-### 4.2 Add your rclone config as a secret
+1. Go to https://www.kaggle.com and sign in
+2. Click your profile picture (top right) → **Settings**
+3. Scroll to **Phone Verification** — if it says unverified, verify now
+   (Kaggle requires this to unlock GPU and Internet access)
 
-1. Click your profile picture (top right) → **Settings**
-2. Scroll down to **API** section → click **Add New Token** if you don't have one
-3. Scroll to **Secrets** section → click **Add New Secret**
-4. Fill in:
-   - **Name:** `RCLONE_CONF`
-   - **Value:** paste the rclone config you copied earlier
-     (if you lost it, run `cat ~/.config/rclone/rclone.conf` in Terminal)
-5. Click **Add**
+### 4.2 Add your rclone config as a Kaggle secret
+
+The rclone config you created in Phase 1.7 needs to be stored in Kaggle
+so the notebook can authenticate with your Google Drive.
+
+On your Mac, run:
+```bash
+cat ~/.config/rclone/rclone.conf | pbcopy
+```
+
+This copies the config contents to your clipboard.
+
+In Kaggle:
+1. Click your profile picture → **Settings**
+2. Scroll down to the **Secrets** section
+3. Click **Add New Secret**
+4. **Name:** type `RCLONE_CONF` exactly — capital letters, underscore, no spaces
+5. **Value:** paste from clipboard (**Cmd+V**)
+6. Click **Add**
 
 ### 4.3 Create the notebook
 
-1. Click **Create** (top right) → **New Notebook**
-2. A blank notebook opens
+1. Click **Create** (top right of any Kaggle page) → **New Notebook**
+2. A blank notebook opens in the editor
 
-### 4.4 Upload the notebook content
+### 4.4 Upload the notebook file
 
-1. Click the three dots **⋮** menu (top right of the notebook)
+1. In the notebook editor, click the **⋮** (three dots) menu in the top right
 2. Click **Import Notebook**
-3. Upload `notebooks/kaggle_worker.ipynb` from this project
+3. In the dialog that appears, click **Browse** or drag-and-drop
+4. Select `notebooks/kaggle_worker.ipynb` from this project
+5. The notebook reloads with all 5 cells populated
 
 ### 4.5 Enable GPU and Internet
 
-1. Click the three dots **⋮** menu → **Accelerator**
-2. Select **GPU T4 x2** (or P100 if available)
-3. Click the three dots **⋮** menu → **Internet** → turn **ON**
+These **must** be turned on before running any cells, otherwise Cell 1
+and Cell 2 will fail.
 
-### 4.6 Run the cells
+1. Click the **⋮** menu (top right) → **Accelerator**
+2. Select **GPU T4 x2** — click **Save**
+3. Click the **⋮** menu again → **Internet**
+4. Toggle it **On** — click **Save**
 
-Same as Colab — run each cell one at a time, top to bottom.
+If you don't see the Internet or GPU options, your phone verification
+hasn't been approved yet — check your Kaggle Settings and try again.
 
-**Cell 1** installs rclone and connects to Drive. If it succeeds you'll see:
-`Google Drive connected!`
+### 4.6 Run Cell 1 — Install rclone and connect to Drive
 
-If it fails with "secret not found" — go back to step 4.2 and check the
-secret name is exactly `RCLONE_CONF` (case-sensitive).
+Click ▶ on Cell 1. Takes about 1 minute.
 
-**Cell 2** installs OpenFOAM (takes ~5 min, same as Colab).
+✅ **Success:** last line says:
+```
+Google Drive connected! f1-opt contents: (empty or folder list)
+```
 
-**Cells 3–4** setup and functions — should be quick.
+❌ **"secret not found":** the secret name must be exactly `RCLONE_CONF`
+(all caps, underscore). Go back to step 4.2 and re-add it with the
+correct name.
 
-**Cell 5** starts the worker loop. You'll see:
-`CFD Worker (kaggle) started at HH:MM:SS`
+❌ **"Failed to create file system":** your rclone token may have expired.
+On your Mac, run `rclone config reconnect gdrive:` to refresh it, then
+copy the updated `~/.config/rclone/rclone.conf` and update the Kaggle secret.
 
-Kaggle doesn't need a keep-alive script — its sessions are more stable.
-But still keep the tab open.
+### 4.7 Run Cell 2 — Install OpenFOAM
+
+Click ▶. Takes 4–6 minutes, same as Colab.
+
+✅ **Success:** prints `Done.`
+
+❌ If it errors, click ▶ again — same apt-get quirk as Colab.
+
+### 4.8 Run Cells 3 and 4 — Setup and functions
+
+Click ▶ on each. Both finish instantly.
+
+✅ Cell 3 prints: `Worker kaggle ready.`
+✅ Cell 4 prints: `Functions ready.`
+
+### 4.9 Run Cell 5 — Start the worker loop
+
+Click ▶.
+
+✅ **Success:**
+```
+CFD Worker (kaggle) started at HH:MM:SS
+Syncing from Drive and watching for jobs...
+```
+
+The cell shows a spinning circle — it is running. Leave it.
+
+When jobs arrive it prints the same progress as the Colab worker:
+```
+[14:45:11] Processing: iter0001_B_cc7e44
+  blockMesh...
+  snappyHexMesh...
+  simpleFoam...
+  CL=1.1902  CD=0.9011  L/D=1.321
+```
+
+**Kaggle session limit:** free sessions cap at **9 hours**. Plan to start
+your Kaggle notebook about 3 hours into the 12-hour run so both workers
+are active for most of the session. If Kaggle stops, go back to Cell 5
+and click ▶ to resume — it will pick up from the Drive queue automatically.
 
 ---
 
@@ -463,8 +573,8 @@ meshes the car for the first time.
    If Colab disconnected, run Cell 5 again and paste the keep-alive script.
 
 **Visual check keeps failing**
-→ The car geometry might be too far from the camera. Open `visual_validator.py`
-   and adjust the `CAMERAS` locations to frame your specific model better.
+→ The car geometry might be too far from the camera. Open `llm_agent.py`
+   and adjust the `CAMERAS` list (around line 20) to frame your specific model better.
 
 **LLM keeps proposing the same params**
 → The history is too short — this is normal in early iterations.
