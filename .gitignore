@@ -1,0 +1,7 @@
+output/*.stl
+output/*.obj
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+token.json
